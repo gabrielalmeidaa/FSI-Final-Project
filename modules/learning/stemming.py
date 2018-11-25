@@ -64,11 +64,16 @@ def get_term_frequency_from_keywords(binary_weight=True, n_keywords=50, count_ve
         tf_idf_vector=tfidf_transformer.transform(cv.transform([descriptions[i]]))
         sorted_items=sort_coo(tf_idf_vector.tocoo())
         keywords=extract_topn_from_vector(feature_names, sorted_items, n_keywords)
-
         keyword_indexes = [ feature_names.index(k) for k in keywords]
         if binary_weight:
             features_array = [1 if i in keyword_indexes else 0 for i in range(0, len(feature_names))]
-            import pdb; pdb.set_trace()
+        else:
+            features_array = [keywords[feature_names[i]] if i in keyword_indexes else 0 for i in range(0, len(feature_names))]
+        return_data.append(features_array)
+
+
+    return disciplines, feature_names, return_data 
+
             # return_data.append([[disciplines[i]] + k])
         # for k in keywords:
         #
