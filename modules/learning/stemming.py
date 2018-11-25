@@ -22,12 +22,10 @@ def sort_coo(coo_matrix):
 
 def extract_topn_from_vector(feature_names, sorted_items, topn=10):
     """get the feature names and tf-idf score of top n items"""
-
     sorted_items = sorted_items[:topn]
 
     score_vals = []
     feature_vals = []
-
     # word index and corresponding tf-idf score
     for idx, score in sorted_items:
         #keep track of feature name and its corresponding score
@@ -35,17 +33,17 @@ def extract_topn_from_vector(feature_names, sorted_items, topn=10):
         feature_vals.append(feature_names[idx])
 
     #create a tuples of feature,score
-    #results = zip(feature_vals,score_vals)
+    results = zip(feature_vals,score_vals)
     results= {}
     for idx in range(len(feature_vals)):
         results[feature_vals[idx]]=score_vals[idx]
 
-    return result
+    return results
 
 def get_term_frequency_from_keywords(binary_weight=True, n_keywords=50, count_vectorizer_stop_words=None, count_vectorizer_min_df=0.0, count_vectorizer_max_df=0.9):
     descriptions = []
     disciplines = []
-
+    return_data = []
     collection = get_mongo_collection('discipline')
     for item in collection.find():
         if item.get('programa'):
@@ -63,14 +61,15 @@ def get_term_frequency_from_keywords(binary_weight=True, n_keywords=50, count_ve
     feature_names=cv.get_feature_names()
 
     for i in range(0, len(descriptions)):
-        return_vals = {'discipline': disciplines[i], 'features': [] }
         tf_idf_vector=tfidf_transformer.transform(cv.transform([descriptions[i]]))
         sorted_items=sort_coo(tf_idf_vector.tocoo())
-        import pdb; pdb.set_trace()
         keywords=extract_topn_from_vector(feature_names, sorted_items, n_keywords)
 
-        keyword_indexes = [ cv.index(k) for k in keyword]
-        import pdb; pdb.set_trace()
+        keyword_indexes = [ feature_names.index(k) for k in keywords]
+        if binary_weight:
+            features_array = [1 if i in keyword_indexes else 0 for i in range(0, len(feature_names))]
+            import pdb; pdb.set_trace()
+            # return_data.append([[disciplines[i]] + k])
         # for k in keywords:
         #
         # # now print the results
