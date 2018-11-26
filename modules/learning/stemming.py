@@ -7,7 +7,9 @@ from sklearn.cluster import KMeans
 import numpy as np
 import sys
 sys.dont_write_bytecode = True
-
+import os
+clear = lambda: os.system('clear')
+import csv
 
 ''' Get Mongodb collection '''
 def get_mongo_collection(collection_name):
@@ -61,6 +63,9 @@ def get_term_frequency_from_keywords(binary_weight=True, n_keywords=50, count_ve
     feature_names=cv.get_feature_names()
 
     for i in range(0, len(descriptions)):
+        # print('looping through descriptions')
+        clear()
+        print('missing {}'.format(len(descriptions) - i))
         tf_idf_vector=tfidf_transformer.transform(cv.transform([descriptions[i]]))
         sorted_items=sort_coo(tf_idf_vector.tocoo())
         keywords=extract_topn_from_vector(feature_names, sorted_items, n_keywords)
@@ -72,7 +77,7 @@ def get_term_frequency_from_keywords(binary_weight=True, n_keywords=50, count_ve
         return_data.append(features_array)
 
 
-    return disciplines, feature_names, return_data 
+    return disciplines, feature_names, return_data
 
             # return_data.append([[disciplines[i]] + k])
         # for k in keywords:
@@ -91,8 +96,9 @@ def get_term_frequency_from_keywords(binary_weight=True, n_keywords=50, count_ve
     # import pdb; pdb.set_trace()
 
         # import pdb; pdb.set_trace()
-
-collection = get_mongo_collection('discipline')
-data = get_term_frequency_from_keywords()
+# disciplines, features_name, dataset = get_term_frequency_from_keywords()
+# import pdb; pdb.set_trace()
+# collection = get_mongo_collection('discipline')
+# disciplines, features_name, dataset = get_term_frequency_from_keywords()
 # import pdb; pdb.set_trace()
 #
