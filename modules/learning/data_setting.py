@@ -42,16 +42,45 @@ def extract_topn_from_vector(feature_names, sorted_items, topn=10):
 
     return results
 
-def get_term_frequency_from_keywords(binary_weight=True, n_keywords=50, count_vectorizer_stop_words=None, count_vectorizer_min_df=0.0, count_vectorizer_max_df=0.9):
+
+def stem_string(string):
+    st = RSLPStemmer()
+    text = []
+    for token in string:
+        text.append(st.stem(token))
+
+    return ''.join(text)
+
+def clean_description(description, minimal_length):
+    text = []
+    for token in description.split(' '):
+        if len(stem_string(token)) > minimal_length:
+            text.append(token)
+
+    return ''.join(text)
+
+
+def get_term_frequency_from_keywords(no_dataset=False, binary_weight=True, n_keywords=50, count_vectorizer_stop_words=None, count_vectorizer_min_df=0.0, count_vectorizer_max_df=0.9,
+                                    minimal_length=3, apply_stem=True):
     descriptions = []
     disciplines = []
     return_data = []
     collection = get_mongo_collection('discipline')
+
+    processed = 0
     for item in collection.find():
+        clear()
+        print('processing mongo items... missing {}'.format(collection.count() - processed))
+        processed += 1
         if item.get('programa'):
             name = item.get('nome')
             description = item.get('programa')
-            descriptions.append(description)
+            # description = clean_description(description, minimal_length)
+
+            if apply_stem:
+                descriptions.append(stem_string(description))
+            else:
+                descriptions.append(description)
             disciplines.append(name)
 
     ''' Creating word vectorizer '''
@@ -61,15 +90,24 @@ def get_term_frequency_from_keywords(binary_weight=True, n_keywords=50, count_ve
     tfidf_transformer.fit(word_count_vector)
 
     feature_names=cv.get_feature_names()
-
+    if no_dataset:
+        return disciplines, features_name
     for i in range(0, len(descriptions)):
-        # print('looping through descriptions')
         clear()
-        print('missing {}'.format(len(descriptions) - i))
+        print('processing keywords from descriptions... missing {}'.format(len(descriptions) - i))
+
         tf_idf_vector=tfidf_transformer.transform(cv.transform([descriptions[i]]))
         sorted_items=sort_coo(tf_idf_vector.tocoo())
         keywords=extract_topn_from_vector(feature_names, sorted_items, n_keywords)
         keyword_indexes = [ feature_names.index(k) for k in keywords]
+
+        with open('keywords.txt', 'a+') as file:
+            file.write('\n\n======== {} ========\n\n'.format(disciplines[i].encode('utf-8', 'ignore')))
+            for k in keywords:
+                file.write ('| {},{} |'.format(k.encode('utf-8', 'ignore'),keywords[k]))
+            file.write('\n')
+            file.close()
+
         if binary_weight:
             features_array = [1 if i in keyword_indexes else 0 for i in range(0, len(feature_names))]
         else:
