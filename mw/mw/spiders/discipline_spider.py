@@ -45,6 +45,7 @@ class DisciplineSpider(CrawlSpider):
                     pass
 
     def get_disciplines(self, response):
+        import pdb; pdb.set_trace()
         item = DisciplineItem()
         item['nome'] = response.xpath('/html/body/section/div/div[3]/div/div/div/h2/text()').extract()[0].encode('utf-8').strip()
         item['codigo'] = re.compile('cod=(.*)').findall(response.url)[0]

@@ -1,3 +1,4 @@
+# coding: utf-8
 import nltk
 import pymongo
 from pymongo import MongoClient
@@ -5,11 +6,11 @@ from sklearn.feature_extraction.text import TfidfVectorizer, TfidfTransformer, C
 from nltk.stem import RSLPStemmer
 from sklearn.cluster import KMeans
 import numpy as np
-import sys
-sys.dont_write_bytecode = True
 import os
 clear = lambda: os.system('clear')
 import csv
+import codecs
+import sys
 
 ''' Get Mongodb collection '''
 def get_mongo_collection(collection_name):
@@ -43,13 +44,31 @@ def extract_topn_from_vector(feature_names, sorted_items, topn=10):
     return results
 
 
-def stem_string(string):
+def stem_string(string, minimal_length):
     st = RSLPStemmer()
+    string = clean_string(string)
+    string = string.replace('\n', ' ')
     text = []
-    for token in string:
-        text.append(st.stem(token))
+    for token in string.split(' '):
+        if token != '' and len(token) > minimal_length:
+            try:
+                text.append(st.stem(clean_word(token)))
+            except:
+                text.append(clean_word(token).decode('utf8', 'ignore'))
 
-    return ''.join(text)
+    return ' '.join(text)
+
+
+def clean_word(word):
+    word = word.replace(',', ' ')
+    word = word.replace('(', ' ')
+    word = word.replace(')', ' ')
+    word = word.replace('.', ' ')
+    return word.strip()
+
+def clean_string(string):
+    string = string.lower()
+    return string
 
 def clean_description(description, minimal_length):
     text = []
@@ -60,7 +79,7 @@ def clean_description(description, minimal_length):
     return ''.join(text)
 
 
-def get_term_frequency_from_keywords(no_dataset=False, binary_weight=True, n_keywords=50, count_vectorizer_stop_words=None, count_vectorizer_min_df=0.0, count_vectorizer_max_df=0.9,
+def get_term_frequency_from_keywords(no_dataset=False, binary_weight=True, n_keywords=80, count_vectorizer_stop_words=None, count_vectorizer_min_df=0.0, count_vectorizer_max_df=0.9,
                                     minimal_length=3, apply_stem=True):
     descriptions = []
     disciplines = []
@@ -78,7 +97,7 @@ def get_term_frequency_from_keywords(no_dataset=False, binary_weight=True, n_key
             # description = clean_description(description, minimal_length)
 
             if apply_stem:
-                descriptions.append(stem_string(description))
+                descriptions.append(stem_string(description, minimal_length))
             else:
                 descriptions.append(description)
             disciplines.append(name)
@@ -90,8 +109,6 @@ def get_term_frequency_from_keywords(no_dataset=False, binary_weight=True, n_key
     tfidf_transformer.fit(word_count_vector)
 
     feature_names=cv.get_feature_names()
-    if no_dataset:
-        return disciplines, features_name
     for i in range(0, len(descriptions)):
         clear()
         print('processing keywords from descriptions... missing {}'.format(len(descriptions) - i))
@@ -109,15 +126,15 @@ def get_term_frequency_from_keywords(no_dataset=False, binary_weight=True, n_key
             file.close()
 
         if binary_weight:
-            features_array = [1 if i in keyword_indexes else 0 for i in range(0, len(feature_names))]
+            features_array = [1 if i in keyword_indexes else -1 for i in range(0, len(feature_names))]
         else:
-            features_array = [keywords[feature_names[i]] if i in keyword_indexes else 0 for i in range(0, len(feature_names))]
+            features_array = [keywords[feature_names[i]] if i in keyword_indexes else -1 for i in range(0, len(feature_names))]
         return_data.append(features_array)
 
 
     return disciplines, feature_names, return_data
 
-            # return_data.append([[disciplines[i]] + k])
+            # return_data.append([[disciplines[i]] + k
         # for k in keywords:
         #
         # # now print the results
